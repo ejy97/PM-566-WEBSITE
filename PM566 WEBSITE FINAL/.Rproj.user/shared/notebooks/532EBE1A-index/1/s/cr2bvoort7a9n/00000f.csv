@@ -1,5 +1,0 @@
-"0","# Remove rows with NA in Data_Value"
-"0",""
-"0","clean_mentalhealth_data <- mental_health_data[!is.na(mental_health_data$Data_Value), ]"
-"0",""
-"0",""
