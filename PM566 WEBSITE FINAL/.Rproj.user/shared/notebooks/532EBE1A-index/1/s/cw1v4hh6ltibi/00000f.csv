@@ -1,0 +1,5 @@
+"0","# Create a subset of the data where Class is ""Mental Health"""
+"0",""
+"0","mental_health_data <- subset(data, Class == ""Mental Health"")"
+"0",""
+"0",""

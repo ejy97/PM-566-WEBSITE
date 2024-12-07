@@ -1,0 +1,48 @@
+"0","# Load necessary libraries"
+"0","library(dplyr)"
+"2","
+Attaching package: ‘dplyr’
+
+"
+"2","The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+"
+"2","The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+"
+"0","library(DT)"
+"2","Registered S3 methods overwritten by 'htmltools':
+  method               from         
+  print.html           tools:rstudio
+  print.shiny.tag      tools:rstudio
+  print.shiny.tag.list tools:rstudio
+"
+"2","Registered S3 method overwritten by 'htmlwidgets':
+  method           from         
+  print.htmlwidget tools:rstudio
+"
+"0","# Filter for ""Frequent mental distress"" under Topic and calculate the mean percentage"
+"0","summarized_data <- clean_mentalhealth_data %>%"
+"0","  filter(Topic == ""Frequent mental distress"") %>%"
+"0","  group_by(LocationDesc) %>%"
+"0","  summarize("
+"0","    `Mean percentage` = mean(Data_Value, na.rm = TRUE)"
+"0","  ) %>%"
+"0","  rename(State = LocationDesc)  # Rename column header to ""State"""
+"0",""
+"0","# Create an interactive table with a custom title"
+"0","datatable("
+"0","  summarized_data,"
+"0","  options = list("
+"0","    pageLength = 10,  # Show 10 rows per page"
+"0","    autoWidth = TRUE  # Adjust column widths"
+"0","  ),"
+"0","  caption = htmltools::tags$caption("
+"0","    style = ""caption-side: top; text-align: center; font-size: 16px; font-weight: bold;"","
+"0","    ""Mean Percentage Reporting Frequent Mental Distress"""
+"0","  )"
+"0",")"

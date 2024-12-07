@@ -1,0 +1,444 @@
+---
+title: "PM566 FINAL REPORT"
+author: "Erin Yu"
+format: pdf
+embed-resources: true
+editor: visual
+execute:
+  echo: false
+  warning: false
+  message: false
+
+header-includes:
+  - \usepackage{geometry}
+  - \geometry{a4paper, margin=1in}
+---
+
+# Introduction
+
+The 2015-2022 Alzheimer's Disease and Healthy Aging Data was obtained from the CDC Division of Population Health's Behavioral Risk Factor Surveillance System (BRFSS). The BRFSS is a cross-sectional telephone survey that state health departments conduct monthly, using standardized questionnaires from the CDC. The purpose of this initiative is to collect prevalence data of risk behaviors and preventive health practices that affect the health status of persons living with Alzheimer's Disease.
+
+Alzheimer's Disease (AD) is an irreversible and debilitating neurodegenerative disorder, with an annual incidence of approximately 360,000 cases.^1^ AD commonly presents with gradual cognitive decline and dementia, ultimately leading to an inability to perform basic living activities. Psychiatric disturbances, including agitation, delusions, hallucinations, and depression have also been reported to affect those suffering with AD.^1,2^ One study found that 61% of a population sample of elderly persons with dementia reported psychiatric disturbances, with up to 24% reporting depression. Given the significance of psychiatric disturbances in patients suffering from AD, this report will attempt to explore the prevalence of mental health issues among individuals with AD across different states, race/ethnicities, and age groups using the 2015-2022 Alzheimer's Disease and Healthy Aging Data. This analysis may be useful in identifying geographic and demographic factors of individuals with AD who are most vulnerable to mental health struggles.
+
+# Methods
+
+The Alzheimer's Disease and Healthy Aging Data from 2015-2022 was acquired from data.gov and read in as a CSV file. Using the "dim" function, there were a total of 31 variables and 28,4142 observations. Variables included the year, location, class of question, topic of question, data values from the question, age groups, and race/ethnicity groups. The "str" and "summary" functions showed that locations were based on states, stratified into 4 geographic regions of Northeast, South, Midwest, and West. Class of interview questions were classified into "mental health," "overall health," "smoking and alcohol use," "caregiving," "nutrition/physical activity/obesity," "screenings and vaccines," and "cognitive decline." Specific topics of questions ranged from "frequent mental distress, and "lifetime diagnosis of depression," for the class of questions related to mental health, to "colorectal cancer screening" for questions classified under "screenings and vaccines". Data values were reported as percentages for the questions related to mental health. The age group variable included three groups including 50-64 years old, 65 years or older, and overall. Lastly, the race/ethnicity variable included 5 groups including Native American/Alaskan Native, Hispanic, White non-Hispanic, Black non-Hispanic, and Asian/Pacific Islander.
+
+The dataset was screened to make a subset of all those who were classified for "Mental Health" questions under the variable "class". This yielded a total of 22,184 observations. The data was then cleaned to take out all missing values for the data values of the two topics of questions related to mental health: "frequent mental distress," and "lifetime diagnosis of depression." This yielded a total of 14,508 observations.
+
+# Results
+
+Of all those who reported "frequent mental distress," the mean percentages of each state were calculated and displayed on a heat map (Figure 1). The highest mean percentages of individuals reporting "frequent mental distress" tended to occur in the states of Oklahoma, Arkansas, Louisiana, Mississippi, Alabama, Georgia, Tennessee, Kentucky, and West Virginia. All those who reported "lifetime diagnosis of depression" were summarized by mean percentages by state (Figure 2). In general, higher percentages of individuals reported "lifetime diagnosis of depression" across all the states. Once again, the highest mean percentages of individuals reporting lifetime diagnosis of depression concentrated in the states of Oklahoma, Arkansas, Louisiana, Mississippi, Alabama, Georgia, Tennessee, Kentucky, and West Virginia. Two states from the west that did not have high percentages for frequent mental distress, Washington and Oregon, were notable to have high percentages of depression (between 20-22%).
+
+```{r}
+# Read the CSV file into a data frame
+data <- read.csv("/Users/erinyu/Desktop/USC/MPH/Fall 2024/Health Data (PM 566)/Alzheimer_s_Disease_and_Healthy_Aging_Data.csv")
+
+```
+
+```{r}
+# Create a subset of the data where Class is "Mental Health"
+
+mental_health_data <- subset(data, Class == "Mental Health")
+
+
+```
+
+```{r}
+# Remove rows with NA in Data_Value
+
+clean_mentalhealth_data <- mental_health_data[!is.na(mental_health_data$Data_Value), ]
+
+
+```
+
+```{r}
+# Load libraries
+library(dplyr)
+library(ggplot2)
+library(sf)
+library(tigris)
+
+# Set tigris options for caching
+options(tigris_use_cache = TRUE)
+
+```
+
+```{r}
+# Load U.S. state geometries
+states <- tigris::states(cb = TRUE)
+
+# Filter out non-continental states (like Alaska, Hawaii, etc.)
+states <- states %>% 
+  filter(!STUSPS %in% c("HI", "AK", "PR", "GU", "VI", "MP", "AS"))
+
+# Prepare the data for "Frequent Mental Distress"
+mental_distress_table <- data %>%
+  filter(Topic == "Frequent mental distress" & !is.na(Data_Value)) %>%
+  group_by(LocationDesc) %>%
+  summarise(Mean_Percentage = mean(Data_Value, na.rm = TRUE)) %>%
+  rename(NAME = LocationDesc)
+
+# Merge with state geometries
+mental_distress_map <- states %>%
+  left_join(mental_distress_table, by = "NAME")
+
+# Plot Frequent Mental Distress by State
+ggplot(data = mental_distress_map) +
+  geom_sf(aes(fill = Mean_Percentage), color = "white", size = 0.2) +
+  scale_fill_viridis_c(option = "plasma", na.value = "gray90", name = "Mean %") +
+  labs(
+    title = "Figure 1: Frequent Mental Distress by State",
+    subtitle = "Mean Percentage of Individuals Reporting Frequent Mental Distress",
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0.5, size = 16),
+    plot.subtitle = element_text(hjust = 0.5, size = 12),
+    legend.position = "bottom"
+  )
+
+```
+
+```{r}
+# Prepare the data for "Lifetime Diagnosis of Depression"
+depression_table <- data %>%
+  filter(Topic == "Lifetime diagnosis of depression" & !is.na(Data_Value)) %>%
+  group_by(LocationDesc) %>%
+  summarise(Mean_Percentage = mean(Data_Value, na.rm = TRUE)) %>%
+  rename(NAME = LocationDesc)
+
+# Merge with state geometries
+depression_map <- states %>%
+  left_join(depression_table, by = "NAME")
+
+# Plot Lifetime Diagnosis of Depression by State
+ggplot(data = depression_map) +
+  geom_sf(aes(fill = Mean_Percentage), color = "white", size = 0.2) +
+  scale_fill_viridis_c(option = "plasma", na.value = "gray90", name = "Mean %") +
+  labs(
+    title = "Figure 2: Lifetime Diagnosis of Depression by State",
+    subtitle = "Mean Percentage of Individuals Reporting Lifetime Diagnosis of Depression",
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0.5, size = 14),
+    plot.subtitle = element_text(hjust = 0.5, size = 12),
+    legend.position = "bottom"
+  )
+
+
+```
+
+The states were classified into 4 regions: Northeast, West, Midwest, and the South. When analyzing the aggregate mean percentages of "frequent mental distress" by these regions, the states in the South demonstrated the highest percentage at 12%, compared to the Midwest at 11.3%, West at 10.9%, and Northeast at 10.9% (Figure 3). Lifetime diagnosis of depression was also reported to be higher in the Southern states at 18%, compared to 17.4% in the Midwest, 16.3% in the Northeast, and 16.2% in the West (Figure 4).
+
+```{r}
+# Load necessary libraries
+library(dplyr)
+library(ggplot2)
+
+# Define the desired regions
+selected_regions <- c("West", "Midwest", "Northeast", "South")
+
+# Filter and summarize the data for "Frequent mental distress" by selected regions
+mental_distress_region <- data %>%
+  filter(Topic == "Frequent mental distress" & !is.na(Data_Value)) %>%
+  filter(LocationDesc %in% selected_regions) %>%
+  group_by(LocationDesc) %>%
+  summarise(Mean_Percentage = mean(Data_Value, na.rm = TRUE)) %>%
+  arrange(desc(Mean_Percentage))
+
+# Plot Frequent Mental Distress by Region
+ggplot(mental_distress_region, aes(x = reorder(LocationDesc, Mean_Percentage), y = Mean_Percentage)) +
+  geom_bar(stat = "identity", fill = "#0073C2FF", color = "black", width = 0.6) +
+  geom_text(aes(label = paste0(round(Mean_Percentage, 1), "%")), vjust = -0.5, size = 4.5) +
+  labs(
+    title = "Figure 3: Frequent Mental Distress by Region",
+    subtitle = "Mean Percentage of Individuals Reporting Mental Distress",
+    x = "Region",
+    y = "Mean Percentage (%)"
+  ) +
+  scale_y_continuous(limits = c(0, max(mental_distress_region$Mean_Percentage) + 10), expand = c(0, 0)) +
+  theme_minimal(base_size = 14) +
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0.5, size = 14),
+    plot.subtitle = element_text(hjust = 0.5, size = 10),
+    axis.text.x = element_text(size = 8),
+    axis.text.y = element_text(size = 8),
+    axis.title.x = element_text(size = 10, face = "bold"),
+    axis.title.y = element_text(size = 10, face = "bold"),
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor = element_blank(),
+    plot.margin = margin(1, 1, 1, 1, "cm")
+  )
+
+
+```
+
+```{r}
+# Load necessary libraries
+library(dplyr)
+library(ggplot2)
+
+# Define the desired regions
+selected_regions <- c("West", "Midwest", "Northeast", "South")
+
+# Filter and summarize the data for "Lifetime diagnosis of depression" by selected regions
+depression_region <- data %>%
+  filter(Topic == "Lifetime diagnosis of depression" & !is.na(Data_Value)) %>%
+  filter(LocationDesc %in% selected_regions) %>%
+  group_by(LocationDesc) %>%
+  summarise(Mean_Percentage = mean(Data_Value, na.rm = TRUE)) %>%
+  arrange(desc(Mean_Percentage))
+
+# Plot Lifetime Diagnosis of Depression by Region
+ggplot(depression_region, aes(x = reorder(LocationDesc, Mean_Percentage), y = Mean_Percentage)) +
+  geom_bar(stat = "identity", fill = "#E69F00", color = "black", width = 0.6) +
+  geom_text(aes(label = paste0(round(Mean_Percentage, 1), "%")), vjust = -0.5, size = 4.5) +
+  labs(
+    title = "Figure 4: Lifetime Diagnosis of Depression by Region",
+    subtitle = "Mean Percentage of Individuals Reporting Depression Diagnosis",
+    x = "Region",
+    y = "Mean Percentage (%)"
+  ) +
+  scale_y_continuous(limits = c(0, max(depression_region$Mean_Percentage) + 10), expand = c(0, 0)) +
+  theme_minimal(base_size = 14) +
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0.5, size = 14),
+    plot.subtitle = element_text(hjust = 0.5, size = 10),
+    axis.text.x = element_text(size = 8),
+    axis.text.y = element_text(size = 8),
+    axis.title.x = element_text(size = 10, face = "bold"),
+    axis.title.y = element_text(size = 10, face = "bold"),
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor = element_blank(),
+    plot.margin = margin(1, 1, 1, 1, "cm")
+  )
+
+```
+
+Percentage of individuals reporting frequent mental distress was analyzed based on race/ethnicity groups (Figure 5). The Native American/Alaskan Native group reported the highest percentage of frequent mental distress at 18.5%, compared to the Hispanic group at 13% closely followed by the Black/non-Hispanic group at 12.8%, White non-Hispanic group at 10%, and Asian/Pacific Islander group at 7%. Lifetime diagnosis of depression was also observed the most frequently in the Native American/Alaskan Native group at 25.1%, followed by the Hispanic group at 19.1%, White non-Hispanic group at 18.5%, Black non-Hispanic group at 16.1%, and Asian/Pacific Islander group at 8.7% (Figure 6). It is notable that the lifetime diagnosis of depression was higher in the White non-Hispanic group compared to the Black non-Hispanic group, whereas a greater percentage of Black non-Hispanic group reported frequent mental distress.
+
+```{r}
+
+depression_summary <- data %>%
+  filter(Topic == "Lifetime diagnosis of depression" & !is.na(Data_Value)) %>%
+  group_by(LocationDesc) %>%
+  summarise(Mean_Percentage = mean(Data_Value, na.rm = TRUE)) %>%
+  arrange(desc(Mean_Percentage))
+
+```
+
+```{r}
+# Load necessary libraries
+library(dplyr)
+library(ggplot2)
+
+# Define the desired race/ethnicity categories
+selected_categories <- c("Native Am/Alaskan Native", "Hispanic", "Black, non-Hispanic", 
+                         "White, non-Hispanic", "Asian/Pacific Islander")
+
+# Filter and summarize the data for "Frequent mental distress" by selected race/ethnicity categories
+mental_distress_race <- data %>%
+  filter(Topic == "Frequent mental distress" & !is.na(Data_Value)) %>%
+  filter(Stratification2 %in% selected_categories) %>%
+  group_by(Stratification2) %>%
+  summarise(Mean_Percentage = mean(Data_Value, na.rm = TRUE)) %>%
+  arrange(desc(Mean_Percentage))
+
+# Save the chart as a PNG file
+mental_distress_plot <- ggplot(mental_distress_race, aes(x = reorder(Stratification2, Mean_Percentage), y = Mean_Percentage)) +
+  geom_bar(stat = "identity", fill = "#0073C2FF", color = "black", width = 0.7) +
+  geom_text(aes(label = round(Mean_Percentage, 1)), hjust = -0.3, size = 3.5) +
+  coord_flip() +
+  labs(
+    title = "Figure 5: Frequent Mental Distress by Race/Ethnicity",
+    subtitle = "Mean Percentage of Individuals Reporting Mental Distress",
+    x = "Race/Ethnicity",
+    y = "Mean Percentage (%)"
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0.5, size = 10),
+    plot.subtitle = element_text(hjust = 0.5, size = 10),
+    axis.text.x = element_text(size = 9),
+    axis.text.y = element_text(size = 9),
+    axis.title.x = element_text(size = 10, face = "bold"),
+    axis.title.y = element_text(size = 10, face = "bold"),
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor = element_blank(),
+    plot.margin = margin(1, 1, 1, 1, "cm")
+  ) +
+  expand_limits(y = max(mental_distress_race$Mean_Percentage) + 5)
+
+ggsave("frequent_mental_distress.png", mental_distress_plot, width = 7, height = 3, units = "in")
+
+
+
+```
+
+```{r}
+# Filter and summarize the data for "Lifetime diagnosis of depression" by selected race/ethnicity categories
+depression_race <- data %>%
+  filter(Topic == "Lifetime diagnosis of depression" & !is.na(Data_Value)) %>%
+  filter(Stratification2 %in% selected_categories) %>%
+  group_by(Stratification2) %>%
+  summarise(Mean_Percentage = mean(Data_Value, na.rm = TRUE)) %>%
+  arrange(desc(Mean_Percentage))
+
+# Save the chart as a PNG file
+depression_plot <- ggplot(depression_race, aes(x = reorder(Stratification2, Mean_Percentage), y = Mean_Percentage)) +
+  geom_bar(stat = "identity", fill = "#E69F00", color = "black", width = 0.7) +
+  geom_text(aes(label = round(Mean_Percentage, 1)), hjust = -0.3, size = 3.5) +
+  coord_flip() +
+  labs(
+    title = "Figure 6: Lifetime Diagnosis of Depression by Race/Ethnicity",
+    subtitle = "Mean Percentage of Individuals Reporting a Depression Diagnosis",
+    x = "Race/Ethnicity",
+    y = "Mean Percentage (%)"
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0.5, size = 10),
+    plot.subtitle = element_text(hjust = 0.5, size = 10),
+    axis.text.x = element_text(size = 9),
+    axis.text.y = element_text(size = 9),
+    axis.title.x = element_text(size = 10, face = "bold"),
+    axis.title.y = element_text(size = 10, face = "bold"),
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor = element_blank(),
+    plot.margin = margin(1, 1, 1, 1, "cm")
+  ) +
+  expand_limits(y = max(depression_race$Mean_Percentage) + 5)
+
+ggsave("lifetime_diagnosis_depression.png", depression_plot, width = 7, height = 3, units = "in")
+
+
+```
+
+```{r}
+
+knitr::include_graphics("frequent_mental_distress.png")
+knitr::include_graphics("lifetime_diagnosis_depression.png")
+```
+
+Lastly, frequent mental distress was analyzed by age groups (Figure 7). Age groups were categorized by 50-64 years, 65 years or older, and overall. Individuals in the 50-64 year old group reported more frequent mental distress (13.3%) compared to those 65 years old or older (8.1%). Similarly, lifetime diagnosis of depression was higher in the 50-64 year old group (20.6%) compared to the 65 years or older group (14.8%) (Figure 8).
+
+```{r}
+# Load necessary libraries
+library(dplyr)
+library(ggplot2)
+
+# Filter and summarize the data for "Frequent mental distress" by groups in $Stratification1
+mental_distress_groups <- clean_mentalhealth_data %>%
+  filter(Topic == "Frequent mental distress" & !is.na(Data_Value)) %>%
+  group_by(Stratification1) %>%
+  summarise(Mean_Percentage = mean(Data_Value, na.rm = TRUE)) %>%
+  arrange(desc(Mean_Percentage))
+
+# Ensure "Overall" is the last group in the plot
+mental_distress_groups <- mental_distress_groups %>%
+  mutate(Stratification1 = factor(Stratification1, 
+                                  levels = c(setdiff(Stratification1, "Overall"), "Overall")))
+
+# Create a publication-ready bar chart
+ggplot(mental_distress_groups, aes(x = Stratification1, y = Mean_Percentage)) +
+  geom_bar(stat = "identity", fill = "#0073C2FF", color = "black", width = 0.8) +  # Wider and taller bars
+  geom_text(aes(label = paste0(round(Mean_Percentage, 1), "%")), 
+            vjust = -0.3, size = 5) +  # Add data labels with percentage symbol
+  labs(
+    title = "Figure 7: Frequent Mental Distress by Age Groups",
+    subtitle = "Mean Percentage of Individuals Reporting Mental Distress",
+    x = "Age Group",
+    y = "Mean Percentage (%)"
+  ) +
+  scale_y_continuous(
+    limits = c(0, max(mental_distress_groups$Mean_Percentage) + 30),  # Extend y-axis limit for larger bars
+    expand = c(0, 0)  # Remove default expansion
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0.5, size = 12),  # Center and bold title
+    plot.subtitle = element_text(hjust = 0.5, size = 12),  # Center subtitle
+    axis.text.x = element_text(size = 10, angle = 45, hjust = 1),  # Rotate x-axis labels
+    axis.text.y = element_text(size = 10),  # Style y-axis labels
+    axis.title.x = element_text(size = 10, face = "bold"),  # Style x-axis title
+    axis.title.y = element_text(size = 10, face = "bold"),  # Style y-axis title
+    panel.grid.major.y = element_blank(),  # Remove gridlines for a clean look
+    panel.grid.minor = element_blank(),  # Remove minor gridlines
+    plot.margin = margin(1, 1, 1, 1, "cm")  # Add margins for spacing
+  )
+
+```
+
+```{r}
+# Load necessary libraries
+library(dplyr)
+library(ggplot2)
+
+# Filter and summarize the data for "Lifetime diagnosis of depression" by groups in $Stratification1
+depression_groups <- clean_mentalhealth_data %>%
+  filter(Topic == "Lifetime diagnosis of depression" & !is.na(Data_Value)) %>%
+  group_by(Stratification1) %>%
+  summarise(Mean_Percentage = mean(Data_Value, na.rm = TRUE)) %>%
+  arrange(desc(Mean_Percentage))
+
+# Ensure "Overall" is the last group in the plot
+depression_groups <- depression_groups %>%
+  mutate(Stratification1 = factor(Stratification1, 
+                                  levels = c(setdiff(Stratification1, "Overall"), "Overall")))
+
+# Create a publication-ready bar chart
+ggplot(depression_groups, aes(x = Stratification1, y = Mean_Percentage)) +
+  geom_bar(stat = "identity", fill = "#E69F00", color = "black", width = 0.8) +  # Wider and taller bars with orange color
+  geom_text(aes(label = paste0(round(Mean_Percentage, 1), "%")), 
+            vjust = -0.3, size = 5) +  # Add data labels with percentage symbol
+  labs(
+    title = "Figure 8: Lifetime Diagnosis of Depression by Age Groups",
+    subtitle = "Mean Percentage of Individuals Diagnosed with Depression",
+    x = "Age Group",
+    y = "Mean Percentage (%)"
+  ) +
+  scale_y_continuous(
+    limits = c(0, max(depression_groups$Mean_Percentage) + 30),  # Extend y-axis limit for larger bars
+    expand = c(0, 0)  # Remove default expansion
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0.5, size = 12),  # Center and bold title
+    plot.subtitle = element_text(hjust = 0.5, size = 12),  # Center subtitle
+    axis.text.x = element_text(size = 10, angle = 45, hjust = 1),  # Rotate x-axis labels
+    axis.text.y = element_text(size = 10),  # Style y-axis labels
+    axis.title.x = element_text(size = 10, face = "bold"),  # Style x-axis title
+    axis.title.y = element_text(size = 10, face = "bold"),  # Style y-axis title
+    panel.grid.major.y = element_blank(),  # Remove gridlines for a clean look
+    panel.grid.minor = element_blank(),  # Remove minor gridlines
+    plot.margin = margin(1, 1, 1, 1, "cm")  # Add margins for spacing
+  )
+```
+
+# Conclusion
+
+Based on these findings, the highest percentage of individuals who reported frequent mental distress or lifetime diagnosis of depression were aggregated in the Southern States including Oklahoma, Arkansas, Louisiana, Mississippi, Alabama, Georgia, Tennessee, Kentucky, and West Virginia. Interestingly, Washington and Oregon were the only 2 states in the West that reported high percentage of lifetime diagnosis of depression, but not frequent mental distress. These states have been reported to have higher rates of depression than the national average, with 35.3% of adults in Oregon reporting symptoms of depression or anxiety in February 2023 which was higher than 32.3% of adults in the US.^4^ 25% of adults in Washington reported ever being told by a health professional that they have a depressive disorder.^5^ Some factors that may influence these statistics is a lack of access to mental health services in rural areas, high housing costs in cities like Seattle and Portland, and the persistent rainy climate of the Pacific Northwest.
+
+The Native American/Alaskan Native group reported the highest rates of frequent mental distress (18.5%) and lifetime diagnosis of depression (25.1%) compared to all other racial/ethnic groups. This is a significant finding that highlights the importance of concentrating mental health initiatives and screenings in individuals suffering with AD in these groups.
+
+Lastly, individuals in the 50-64 year old group reported higher rates of frequent mental distress and lifetime diagnosis of depression compared to those 65 years or older. This may be due to a sampling error. Individuals in the older group may be potentially more difficult to reach by phone, or have more debilitating progressions with AD to be able to answer these phone interview questions.
+
+In conclusion, the results of this data elucidate key groups with AD that are most impacted by mental health struggles . Future efforts to design public health interventions may be useful in focusing on vulnerable groups in the Southern states, Pacific Northwest, and Native American/Alaskan Native communities.
+
+# References
+
+1.  Lyketsos, C. G., & Olin, J. (2002). Depression in Alzheimer's disease: overview and treatment. *Biological psychiatry*, *52*(3), 243–252. https://doi-org.libproxy2.usc.edu/10.1016/s0006-3223(02)01348-3
+
+2.  Burns, A., Jacoby, R., & Levy, R. (1990). Psychiatric phenomena in Alzheimer's disease. III: Disorders of mood. *The British journal of psychiatry : the journal of mental science*, *157*, 81–94. https://doi-org.libproxy2.usc.edu/10.1192/bjp.157.1.81
+
+3.  Lyketsos, C. G., Steinberg, M., Tschanz, J. T., Norton, M. C., Steffens, D. C., & Breitner, J. C. (2000). Mental and behavioral disturbances in dementia: findings from the Cache County Study on Memory in Aging. *The American journal of psychiatry*, *157*(5), 708–714. https://doi-org.libproxy2.usc.edu/10.1176/appi.ajp.157.5.708
+
+4.  Published: Mar 20, 2023. (2023, March 20). *Mental health and substance use state fact sheets*. KFF. https://www.kff.org/statedata/mental-health-and-substance-use-state-fact-sheets/oregon/#:\~:text=As%20shown%20in%20the%20figure%20below%2C%20
+
+    from,to%2032.3%%20of%20adults%20in%20the%20U.S.
+
+5.  *Explore Depression in Oregon \| AHR*. (n.d.). https://www.americashealthrankings.org/explore
+
+    /measures/Depression_a/OR

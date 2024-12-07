@@ -1,0 +1,3 @@
+"0","# Read the CSV file into a data frame"
+"0","data <- read.csv(""/Users/erinyu/Desktop/USC/MPH/Fall 2024/Health Data (PM 566)/Alzheimer_s_Disease_and_Healthy_Aging_Data.csv"")"
+"0",""

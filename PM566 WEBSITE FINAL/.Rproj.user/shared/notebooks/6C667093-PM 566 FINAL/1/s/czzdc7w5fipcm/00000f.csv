@@ -1,0 +1,10 @@
+"0","# Filter the data for ""Lifetime diagnosis of depression"""
+"0","depression_table <- data %>%"
+"0","  filter(Topic == ""Lifetime diagnosis of depression"" & !is.na(Data_Value)) %>%"
+"0","  select(LocationDesc, Data_Value) %>%"
+"0","  group_by(LocationDesc) %>%"
+"0","  summarise(Mean_Percentage = mean(Data_Value, na.rm = TRUE)) %>%"
+"0","  arrange(desc(Mean_Percentage))"
+"2","Error in data %>% filter(Topic == ""Lifetime diagnosis of depression"" &  : 
+  could not find function ""%>%""
+"
