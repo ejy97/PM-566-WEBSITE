@@ -1,0 +1,16 @@
+[
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "PM566 WEBSITE FINAL",
+    "section": "",
+    "text": "This final project utilized the 2015-2022 Alzheimer’s Disease and Healthy Aging Data from the CDC Division of Population Health’s Behavioral Risk Factor Surveillance System (BRFSS) to evaluate mental health struggles in people with Alzheimer’s Disease. The results showed that individuals in the Southern states reported the highest percentages of frequent mental distress and lifetime diagnosis of depression. Of all the racial/ethnic groups, Native American/Alaskan Natives reported the highest rates of frequent mental distress (18.5%) and lifetime diagnosis of depression (25.1%).\nYou can download the PDF version of the report here.\nThis is an interactive table reporting the average percentage reporting frequent mental distress by each state.\n\n\n\n\n\n\nThis is a heat map of the mean percentages reporting frequent mental distress by state.\n\n\n\n\n\n\nThis is an interactive table reporting the average percentages of individuals reporting a lifetime diagnosis of depression by state\n\n\n\n\n\n\nThis is a heat map of the mean percentages reporting lifetime diagnosis of depression by state."
+  },
+  {
+    "objectID": "about.html",
+    "href": "about.html",
+    "title": "About",
+    "section": "",
+    "text": "About this site\n\n1 + 1\n\n[1] 2"
+  }
+]
